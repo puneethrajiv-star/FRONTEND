@@ -1,0 +1,10 @@
+{
+  "description": "Empowering Indian students transitioning to BTech in Computer Science, this app offers personalized learning paths, courses, and practice tools to build confidence and skills.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
