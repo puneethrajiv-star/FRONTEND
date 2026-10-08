@@ -59,12 +59,12 @@ export async function apiRequest<T = any>(
 
   if (!response.ok) {
     let errorMsg = `HTTP ${response.status}`;
+    const errorBody = await response.text();
     try {
-      const errJson = await response.json();
-      errorMsg = errJson.message || errJson.error || JSON.stringify(errJson);
+      const errJson = JSON.parse(errorBody);
+      errorMsg = errJson?.message || errJson?.error || errorBody || errorMsg;
     } catch {
-      const errText = await response.text();
-      if (errText) errorMsg = errText;
+      if (errorBody) errorMsg = errorBody;
     }
     throw new Error(errorMsg);
   }
