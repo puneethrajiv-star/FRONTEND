@@ -14,6 +14,7 @@ export default function Home({ navigate }: { navigate: Navigate }) {
   const user = getCurrentUser();
   const [enrolledCourses, setEnrolledCourses] = useState<CourseItem[]>([]);
   const [personalBest, setPersonalBest] = useState<{ wpm: number; accuracy: number } | null>(null);
+  const [streak, setStreak] = useState<{ currentStreak: number; last7Days: boolean[] } | null>(null);
 
   useEffect(() => {
     // 1. Fetch enrolled courses
@@ -46,6 +47,11 @@ export default function Home({ navigate }: { navigate: Navigate }) {
         if (pb && pb.wpm) setPersonalBest(pb);
       })
       .catch(() => {});
+
+    // 3. Fetch activity streak
+    apiRequest<{ currentStreak: number; last7Days: boolean[] }>("/api/streak")
+      .then((s) => setStreak(s))
+      .catch(() => {});
   }, []);
 
   const studentName = user?.name ? user.name.split(" ")[0] : "Student";
@@ -60,14 +66,22 @@ export default function Home({ navigate }: { navigate: Navigate }) {
       <div className="home-grid">
         <section className="streak-card">
           <div className="streak-icon"><Icon name="flame" size={24} /></div>
-          <p>Typing best</p><strong>{personalBest ? `${personalBest.wpm} WPM` : "No attempts"}</strong>
+          <p>{streak ? `${streak.currentStreak}-day streak` : "Typing best"}</p>
+          <strong>{personalBest ? `${personalBest.wpm} WPM` : "No attempts"}</strong>
           <span>{personalBest ? `${personalBest.accuracy}% accuracy` : "Start practicing today"}</span>
           <div className="week-row">
-            {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-              <i className={index < 4 ? "done" : ""} key={`${day}-${index}`}>
-                {index < 4 ? <Icon name="check" size={13} /> : day}
-              </i>
-            ))}
+            {(streak?.last7Days ?? Array(7).fill(false)).map((done, index) => {
+              // last7Days[6] is today; index 0 is 6 days ago
+              const daysAgo = 6 - index;
+              const letters = ["S", "M", "T", "W", "T", "F", "S"];
+              const date = new Date();
+              date.setDate(date.getDate() - daysAgo);
+              return (
+                <i className={done ? "done" : ""} key={index}>
+                  {done ? <Icon name="check" size={13} /> : letters[date.getDay()]}
+                </i>
+              );
+            })}
           </div>
           <Button variant="secondary" onClick={() => navigate("dsa")}>Practice DSA</Button>
         </section>

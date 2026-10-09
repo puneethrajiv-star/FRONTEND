@@ -5,10 +5,16 @@ import { Button, Icon } from "./ui";
 type Difficulty = "Easy" | "Medium" | "Hard";
 type ContentMode = "Code" | "Novel" | "Plain Text";
 
+const NOVELS = [
+  { label: "The Wonderful Wizard of Oz", source: "The Wonderful Wizard of Oz" },
+  { label: "Gulliver's Travels", source: "Gulliver's Travels" },
+  { label: "The Jungle Book", source: "The Jungle Book" },
+];
+
 const fallbackCodePassages: Record<Difficulty, string> = {
-  Easy: 'int age = 18;\nprintf("Age: %d", age);\nreturn 0;',
-  Medium: 'int add(int a, int b) {\n  int total = a + b;\n  return total;\n}\n\nprintf("%d", add(8, 12));',
-  Hard: 'typedef struct {\n  char name[40];\n  int semester;\n} Student;\n\nvoid update(Student *student) {\n  student->semester += 1;\n}',
+  Easy: 'int age = 18;\nString name = "Aarav";\nSystem.out.println(name);\nSystem.out.println(age);',
+  Medium: 'int add(int a, int b) {\n  int total = a + b;\n  return total;\n}\n\nSystem.out.println(add(8, 12));',
+  Hard: 'class Student {\n  String name;\n  int semester;\n\n  void advance() {\n    semester += 1;\n  }\n}',
 };
 
 const fallbackTextPassages: Record<Difficulty, string> = {
@@ -28,6 +34,7 @@ export default function TypingPractice() {
   const [duration, setDuration] = useState(60);
   const [difficulty, setDifficulty] = useState<Difficulty>("Easy");
   const [mode, setMode] = useState<ContentMode>("Code");
+  const [novel, setNovel] = useState(NOVELS[0].source);
   const [typed, setTyped] = useState("");
   const [remaining, setRemaining] = useState(60);
   const [running, setRunning] = useState(false);
@@ -52,6 +59,22 @@ export default function TypingPractice() {
       level = difficulty === "Easy" ? 1 : difficulty === "Medium" ? 3 : 4;
     }
 
+    if (mode === "Novel") {
+      // Fetch all passages for this level and pick one from the chosen novel's source
+      apiRequest<{ content: string; source: string }[]>(`/api/typing/passages?category=${category}&level=${level}`)
+        .then((list) => {
+          const fromNovel = list.filter((p) => p.source === novel);
+          const pool = fromNovel.length > 0 ? fromNovel : list;
+          if (pool.length > 0) {
+            setBackendPassage(pool[Math.floor(Math.random() * pool.length)].content);
+          } else {
+            setBackendPassage(null);
+          }
+        })
+        .catch(() => setBackendPassage(null));
+      return;
+    }
+
     apiRequest<{ content: string }>(`/api/typing/passages/random?category=${category}&level=${level}`)
       .then((res) => {
         if (res && res.content) {
@@ -63,7 +86,7 @@ export default function TypingPractice() {
       .catch(() => {
         setBackendPassage(null);
       });
-  }, [mode, difficulty]);
+  }, [mode, difficulty, novel]);
 
   // Load personal best on mount
   useEffect(() => {
@@ -142,8 +165,19 @@ export default function TypingPractice() {
   }
 
   function updateTyped(value: string) {
-    if (!running) return;
+    if (!passage || finished) return;
     const next = value.slice(0, passage.length);
+
+    // First keystroke starts the test automatically
+    if (!running && next.length > 0) {
+      setRunning(true);
+    }
+    if (next.length === 0) {
+      // Allow clearing back to an idle state before anything is typed
+      setTyped("");
+      return;
+    }
+
     setTyped(next);
     if (next.length === passage.length) {
       setRunning(false);
@@ -186,7 +220,26 @@ export default function TypingPractice() {
           <div><small>Time</small>{[30, 60, 120].map((time) => <button className={duration === time ? "selected" : ""} disabled={running} onClick={() => { setDuration(time); setRemaining(time); }} key={time}>{time} sec</button>)}</div>
           <div><small>Difficulty</small>{(["Easy", "Medium", "Hard"] as Difficulty[]).map((item) => <button className={difficulty === item ? "selected" : ""} disabled={running} onClick={() => changeDifficulty(item)} key={item}>{item}</button>)}</div>
           <div><small>Content</small>{(["Code", "Novel", "Plain Text"] as ContentMode[]).map((item) => <button className={mode === item ? "selected" : ""} disabled={running} onClick={() => changeMode(item)} key={item}>{item}</button>)}</div>
-          <div className="typing-actions"><Button onClick={startTest} disabled={novelUnavailable}>{running ? "Restart" : "Start Test"} <Icon name="arrow" size={17} /></Button><Button variant="secondary" onClick={resetTest}>Restart</Button></div>
+          {mode === "Novel" && (
+            <div>
+              <small>Novel</small>
+              {NOVELS.map((item) => (
+                <button
+                  className={novel === item.source ? "selected" : ""}
+                  disabled={running}
+                  onClick={() => {
+                    if (running) return;
+                    setNovel(item.source);
+                    resetTest();
+                  }}
+                  key={item.source}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="typing-actions"><Button variant="secondary" onClick={resetTest}>Restart</Button></div>
         </div>
 
         {novelUnavailable ? (
@@ -196,7 +249,7 @@ export default function TypingPractice() {
           </div>
         ) : (
           <>
-            <div className="passage-label"><span>{mode === "Code" ? "C practice" : mode} · {difficulty}</span><span>{typed.length} / {passage.length} characters</span></div>
+            <div className="passage-label"><span>{mode === "Code" ? "Java practice" : mode} · {difficulty}</span><span>{typed.length} / {passage.length} characters</span></div>
             <pre className={`typing-passage ${mode !== "Code" ? "prose-passage" : ""}`} aria-label="Text to type">
               {passage.split("").map((character, index) => {
                 const state = index < typed.length ? (typed[index] === character ? "correct" : "incorrect") : index === typed.length ? "cursor" : "";
@@ -208,10 +261,10 @@ export default function TypingPractice() {
               className="typing-input"
               value={typed}
               onChange={(event) => updateTyped(event.target.value)}
-              disabled={!running}
+              disabled={finished}
               spellCheck={false}
               aria-label={`Type the displayed ${mode.toLowerCase()} passage`}
-              placeholder={running ? "Start typing the passage above…" : 'Choose your settings, then press "Start Test".'}
+              placeholder='Start typing to begin the test…'
             />
           </>
         )}

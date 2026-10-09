@@ -2,7 +2,7 @@
  * API client and authentication store for EduBridge
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://final-backend-dtw1.onrender.com";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8083";
 
 export interface User {
   id: number;
@@ -59,12 +59,14 @@ export async function apiRequest<T = any>(
 
   if (!response.ok) {
     let errorMsg = `HTTP ${response.status}`;
-    const errorBody = await response.text();
-    try {
-      const errJson = JSON.parse(errorBody);
-      errorMsg = errJson?.message || errJson?.error || errorBody || errorMsg;
-    } catch {
-      if (errorBody) errorMsg = errorBody;
+    const rawText = await response.text();
+    if (rawText) {
+      try {
+        const errJson = JSON.parse(rawText);
+        errorMsg = errJson.message || errJson.error || JSON.stringify(errJson);
+      } catch {
+        errorMsg = rawText;
+      }
     }
     throw new Error(errorMsg);
   }
