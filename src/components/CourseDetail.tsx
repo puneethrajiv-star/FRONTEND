@@ -176,9 +176,12 @@ export default function CourseDetail({ navigate }: { navigate: Navigate }) {
     }
   }
 
-  function nextLesson() {
+  async function nextLesson() {
     if (selectedIndex >= dynamicLessons.length - 1) return;
     setCompletedThrough((current) => Math.max(current, selectedIndex));
+    if (activeVideo && !watchedVideoIds.has(activeVideo.id)) {
+      await markCurrentVideoWatched();
+    }
     setSelectedIndex((current) => current + 1);
     setAiAnswer(null);
     setQuizScore(null);
@@ -201,6 +204,7 @@ export default function CourseDetail({ navigate }: { navigate: Navigate }) {
         lessons={dynamicLessons}
         courseTitle={courseTitle}
         progressPercentage={progressPercent}
+        watchedVideoIds={watchedVideoIds}
       />
       <main className="lesson-main">
         <div className="lesson-content">

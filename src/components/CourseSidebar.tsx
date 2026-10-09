@@ -18,6 +18,7 @@ export default function CourseSidebar({
   lessons,
   courseTitle = "C Programming",
   progressPercentage,
+  watchedVideoIds,
 }: {
   navigate: Navigate;
   selectedIndex: number;
@@ -26,6 +27,7 @@ export default function CourseSidebar({
   lessons?: SidebarLessonItem[];
   courseTitle?: string;
   progressPercentage?: number;
+  watchedVideoIds?: Set<number>;
 }) {
   const activeLessons = lessons && lessons.length > 0 ? lessons : flatLessons;
   const progress = progressPercentage !== undefined
@@ -50,7 +52,9 @@ export default function CourseSidebar({
             <div className="lesson-list">
               {lessons.map((item, index) => {
                 const current = index === selectedIndex;
-                const complete = index <= completedThrough && !current;
+                const complete = item.videoId !== undefined && watchedVideoIds
+                  ? watchedVideoIds.has(item.videoId) && !current
+                  : index <= completedThrough && !current;
                 const state = current ? "current" : complete ? "complete" : "available";
                 return (
                   <button
