@@ -18,7 +18,7 @@ export default function DsaPractice() {
   const [userCode, setUserCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<string | null>(null);
-  const [solvedCount, setSolvedCount] = useState(0);
+  const solvedCount = problems.filter((p) => p.solved).length;
 
   useEffect(() => {
     apiRequest<DsaProblem[]>("/api/dsa/problems")
@@ -43,19 +43,19 @@ export default function DsaPractice() {
     setSubmitting(true);
     setSubmitResult(null);
     try {
-      const res = await apiRequest<{ passed: boolean; message?: string }>("/api/dsa/attempts", {
+      // Note: there is no automated grader yet. Marking this submission "passed" simply
+      // records that you completed and submitted the problem, not that the code was verified.
+      await apiRequest<{ passed: boolean }>("/api/dsa/attempts", {
         method: "POST",
         body: JSON.stringify({
           problemId: selectedProblem.id,
-          code: userCode,
-          status: "ACCEPTED",
+          passed: true,
         }),
       });
-      setSubmitResult(res.message || "Solution submitted successfully! Status: ACCEPTED");
+      setSubmitResult("Submission recorded. (Note: solutions aren't auto-graded yet — this marks the problem as attempted and completed.)");
       setProblems((prev) =>
         prev.map((p) => (p.id === selectedProblem.id ? { ...p, solved: true } : p))
       );
-      setSolvedCount((c) => c + 1);
     } catch (err: any) {
       setSubmitResult(err.message || "Failed to submit attempt");
     } finally {
@@ -73,7 +73,7 @@ export default function DsaPractice() {
 
       <div className="dsa-summary">
         <span><Icon name="flame" /><b>{problems.length} problems available</b></span>
-        <span><Icon name="check" /><b>{solvedCount} solved in session</b></span>
+        <span><Icon name="check" /><b>{solvedCount} solved</b></span>
       </div>
 
       <div className="filter-row">

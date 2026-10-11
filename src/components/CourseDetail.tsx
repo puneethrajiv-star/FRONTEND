@@ -26,6 +26,15 @@ interface QuizQuestion {
 
 const playlistId = "PLZPZq0r_RZOOzY_vR4zJM32SqsSInGMwe";
 
+const CODING_LANGUAGES = [
+  { label: "C", slug: "c" },
+  { label: "C++", slug: "cpp" },
+  { label: "Java", slug: "java" },
+  { label: "Python", slug: "python" },
+  { label: "JavaScript", slug: "javascript" },
+] as const;
+type CodingLanguage = (typeof CODING_LANGUAGES)[number]["slug"];
+
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
@@ -42,6 +51,7 @@ export default function CourseDetail({ navigate }: { navigate: Navigate }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [completedThrough, setCompletedThrough] = useState(0);
   const [mode, setMode] = useState<LessonMode>("Text");
+  const [codingLanguage, setCodingLanguage] = useState<CodingLanguage>("java");
 
   // Quiz State
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
@@ -300,10 +310,22 @@ export default function CourseDetail({ navigate }: { navigate: Navigate }) {
             <section className="live-coding lesson-mode-panel">
               <div className="coding-heading">
                 <div><h2>Interactive Playground</h2><p>Type, compile, and run code while following the lesson.</p></div>
+                <div className="filter-row" style={{ marginBottom: 0 }}>
+                  {CODING_LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.slug}
+                      className={codingLanguage === lang.slug ? "selected" : ""}
+                      onClick={() => setCodingLanguage(lang.slug)}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="compiler-frame">
                 <iframe
-                  src="https://onecompiler.com/embed/c?hideLanguageSelection=true&hideNew=true&theme=dark"
+                  key={codingLanguage}
+                  src={`https://onecompiler.com/embed/${codingLanguage}?hideLanguageSelection=true&hideNew=true&theme=dark`}
                   title={`Live coding editor — ${currentTitle}`}
                   allow="clipboard-read; clipboard-write"
                 />
