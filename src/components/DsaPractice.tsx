@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { apiRequest } from "../api";
 import { Button, Icon, PageHeader } from "./ui";
 
@@ -19,6 +19,25 @@ export default function DsaPractice() {
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<string | null>(null);
   const solvedCount = problems.filter((p) => p.solved).length;
+  const codeAreaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Quick-insert bar for symbols that are buried behind a shift/symbols layer
+  // on mobile keyboards, so coding on a phone doesn't mean hunting for "{" every line.
+  const SYMBOL_KEYS = ["{", "}", "(", ")", "[", "]", ";", '"', "=", "<", ">", "\t"];
+
+  function insertAtCursor(snippet: string) {
+    const el = codeAreaRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? userCode.length;
+    const end = el.selectionEnd ?? userCode.length;
+    const next = userCode.slice(0, start) + snippet + userCode.slice(end);
+    setUserCode(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + snippet.length;
+      el.setSelectionRange(pos, pos);
+    });
+  }
 
   useEffect(() => {
     apiRequest<DsaProblem[]>("/api/dsa/problems")
@@ -109,15 +128,32 @@ export default function DsaPractice() {
             <span>Java 21</span>
           </div>
 
+          <div className="mobile-symbol-bar">
+            {SYMBOL_KEYS.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => insertAtCursor(key === "\t" ? "    " : key)}
+                tabIndex={-1}
+              >
+                {key === "\t" ? "Tab" : key}
+              </button>
+            ))}
+          </div>
+
           <textarea
+            ref={codeAreaRef}
             value={userCode}
             onChange={(e) => setUserCode(e.target.value)}
             spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            autoComplete="off"
             style={{
               width: "100%",
               minHeight: "220px",
               fontFamily: "monospace",
-              fontSize: "14px",
+              fontSize: "16px",
               padding: "14px",
               borderRadius: "8px",
               background: "var(--color-surface, #1e1e1e)",
