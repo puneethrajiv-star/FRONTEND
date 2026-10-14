@@ -7,8 +7,15 @@ interface CourseItem {
   id: number;
   title: string;
   description: string;
+  level?: string | null;
   isEnrolled?: boolean;
 }
+
+const LEVEL_LABEL: Record<string, string> = {
+  COMPUTER_BASICS: "Start here",
+  BASIC_C: "Beginner",
+  ADVANCED_C: "Advanced",
+};
 
 export default function BrowseCourses({ navigate }: { navigate: Navigate }) {
   const [courses, setCourses] = useState<CourseItem[]>([]);
@@ -64,7 +71,7 @@ export default function BrowseCourses({ navigate }: { navigate: Navigate }) {
                 <b>{course.title.slice(0, 1)}</b>
               </span>
               <div className="course-card-body">
-                <span className="course-category">Computer Science</span>
+                <span className="course-category">{course.level ? LEVEL_LABEL[course.level] || "Computer Science" : "Computer Science"}</span>
                 <h2>{course.title}</h2>
                 <p>{course.description || "Foundational concepts, practice, and video lessons."}</p>
                 <Button

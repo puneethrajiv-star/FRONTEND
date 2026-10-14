@@ -10,8 +10,9 @@ type LessonMode = "Text" | "Video" | "Live coding" | "Quiz" | "Ask AI";
 interface BackendVideo {
   id: number;
   title: string;
-  youtubeUrl: string;
-  durationSeconds: number;
+  url: string;
+  module: string | null;
+  orderIndex: number | null;
 }
 
 interface QuizQuestion {
@@ -105,10 +106,10 @@ export default function CourseDetail({ navigate }: { navigate: Navigate }) {
 
   // Map videos or fallback flatLessons
   const dynamicLessons: SidebarLessonItem[] = backendVideos.length > 0
-    ? backendVideos.map((v, i) => ({
+    ? backendVideos.map((v) => ({
         id: `video-${v.id}`,
         title: v.title,
-        module: `Video Lesson ${i + 1}`,
+        module: v.module || "Lessons",
         videoId: v.id,
       }))
     : flatLessons.map((l) => ({
@@ -120,7 +121,7 @@ export default function CourseDetail({ navigate }: { navigate: Navigate }) {
   const activeVideo = backendVideos[selectedIndex] || null;
   const selectedLesson = flatLessons[selectedIndex % flatLessons.length];
   const currentTitle = activeVideo ? activeVideo.title : selectedLesson.title;
-  const currentModule = activeVideo ? `Module 1 · Video ${selectedIndex + 1}` : selectedLesson.module;
+  const currentModule = activeVideo ? (activeVideo.module || "Lessons") : selectedLesson.module;
 
   // Mark video as watched in backend
   async function markCurrentVideoWatched() {
@@ -197,7 +198,7 @@ export default function CourseDetail({ navigate }: { navigate: Navigate }) {
     setQuizScore(null);
   }
 
-  const ytId = activeVideo ? extractYouTubeId(activeVideo.youtubeUrl) : null;
+  const ytId = activeVideo ? extractYouTubeId(activeVideo.url) : null;
   const isWatched = activeVideo ? watchedVideoIds.has(activeVideo.id) : selectedIndex <= completedThrough;
 
   return (
@@ -297,8 +298,8 @@ export default function CourseDetail({ navigate }: { navigate: Navigate }) {
                 >
                   {isWatched ? "✓ Marked as Watched" : "Mark as Watched"}
                 </Button>
-                {activeVideo?.youtubeUrl && (
-                  <a href={activeVideo.youtubeUrl} target="_blank" rel="noreferrer">
+                {activeVideo?.url && (
+                  <a href={activeVideo.url} target="_blank" rel="noreferrer">
                     Open on YouTube <Icon name="arrow" size={15} />
                   </a>
                 )}
