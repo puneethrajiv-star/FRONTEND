@@ -27,4 +27,4 @@ export type IconName =
   | "spark"
   | "user";
 
-export type Navigate = (screen: Screen) => void;
+export type Navigate = (screen: Screen, courseId?: number) => void;

@@ -42,7 +42,7 @@ function extractYouTubeId(url: string): string | null {
   return match ? match[1] : null;
 }
 
-export default function CourseDetail({ navigate }: { navigate: Navigate }) {
+export default function CourseDetail({ navigate, courseId: requestedCourseId }: { navigate: Navigate; courseId?: number | null }) {
   const [courseId, setCourseId] = useState<number>(1);
   const [courseTitle, setCourseTitle] = useState("C Programming");
   const [backendVideos, setBackendVideos] = useState<BackendVideo[]>([]);
@@ -67,13 +67,28 @@ export default function CourseDetail({ navigate }: { navigate: Navigate }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
-  // Load enrolled course and its videos
+  // Load the requested course (or fall back to first enrolled / first available) and its videos
   useEffect(() => {
+    setSelectedIndex(0);
+    setBackendVideos([]);
     apiRequest<{ id: number; title: string }[]>("/api/courses/enrolled")
       .then(async (enrolledList) => {
         let activeId = 1;
         let title = "Transition to BTech CS";
-        if (enrolledList && enrolledList.length > 0) {
+
+        if (requestedCourseId != null) {
+          activeId = requestedCourseId;
+          const match = enrolledList?.find((c) => c.id === requestedCourseId);
+          if (match) {
+            title = match.title;
+          } else {
+            // Not enrolled yet (e.g. clicked straight from Browse courses) — enroll, then use its title.
+            try {
+              const enrolled = await apiRequest<{ id: number; title: string }>(`/api/courses/${requestedCourseId}/enroll`, { method: "POST" });
+              if (enrolled?.title) title = enrolled.title;
+            } catch {}
+          }
+        } else if (enrolledList && enrolledList.length > 0) {
           activeId = enrolledList[0].id;
           title = enrolledList[0].title;
         } else {
@@ -102,7 +117,7 @@ export default function CourseDetail({ navigate }: { navigate: Navigate }) {
         } catch {}
       })
       .catch(() => {});
-  }, []);
+  }, [requestedCourseId]);
 
   // Map videos or fallback flatLessons
   const dynamicLessons: SidebarLessonItem[] = backendVideos.length > 0

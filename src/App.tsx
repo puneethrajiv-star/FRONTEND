@@ -31,9 +31,11 @@ export default function App() {
   });
 
   const [experienced, setExperienced] = useState(false);
+  const [activeCourseId, setActiveCourseId] = useState<number | null>(null);
   const screenOrder: Screen[] = ["landing", "signup", "login", "onboarding", "home", "typing", "browse", "dsa", "projects", "course"];
 
-  function navigate(next: Screen) {
+  function navigate(next: Screen, courseId?: number) {
+    if (courseId !== undefined) setActiveCourseId(courseId);
     if (next === screen) return;
     localStorage.setItem("edubridge_screen", next);
     const direction = screenOrder.indexOf(next) >= screenOrder.indexOf(screen) ? "forward" : "back";
@@ -64,7 +66,7 @@ export default function App() {
       />
     );
   }
-  else if (screen === "course") content = <CourseDetail navigate={navigate} />;
+  else if (screen === "course") content = <CourseDetail navigate={navigate} courseId={activeCourseId} />;
   else {
     mainNavigation = true;
     content = (

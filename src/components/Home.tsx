@@ -110,7 +110,7 @@ export default function Home({ navigate }: { navigate: Navigate }) {
                     className="course-row stagger-item"
                     style={{ "--item-index": index } as CSSProperties}
                     key={course.id || course.title}
-                    onClick={() => navigate("course")}
+                    onClick={() => navigate("course", course.id)}
                   >
                     <span className="course-symbol">{course.title.slice(0, 1)}</span>
                     <span className="course-info">

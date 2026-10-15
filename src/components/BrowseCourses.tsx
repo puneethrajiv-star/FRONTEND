@@ -42,7 +42,7 @@ export default function BrowseCourses({ navigate }: { navigate: Navigate }) {
         await apiRequest(`/api/courses/${course.id}/enroll`, { method: "POST" });
       } catch {}
     }
-    navigate("course");
+    navigate("course", course.id);
   }
 
   return (
